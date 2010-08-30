@@ -13,7 +13,11 @@ In your Gemfile:
 
 === Not using Rails?
 
-Then you have to do a +gem install simple_currency+ and then require the gem manually:
+Then you have to manually install the gem:
+
+  gem install simple_currency
+
+And manually require it as well:
 
   require "simple_currency"
 
