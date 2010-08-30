@@ -1,11 +1,25 @@
 = simple_currency
 
-A really simple currency converter using Xurrency API. Install it as usual:
+A really simple currency converter using Xurrency API.
+Compatible with Ruby 1.8, 1.9 and JRuby.
 
-  gem sources -a http://gemcutter.org/
-  gem install simple_currency
+== Installation
 
-And all your numeric stuff gets this fancy DSL for free:
+=== Rails 3
+
+In your Gemfile:
+
+  gem "simple_currency"
+
+=== Not using Rails?
+
+Then you have to do a +gem install simple_currency+ and then require the gem manually:
+
+  require "simple_currency"
+
+== Usage
+
+Now all your numeric stuff gets this fancy DSL for free:
 
   30.eur.to_usd
   # => 38.08

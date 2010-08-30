@@ -32,6 +32,7 @@ Gem::Specification.new do |s|
      "lib/core_ext/numeric.rb",
      "lib/simple_currency.rb",
      "lib/simple_currency/currency_convertible.rb",
+     "simple_currency.gemspec",
      "spec/simple_currency_spec.rb",
      "spec/spec_helper.rb"
   ]
