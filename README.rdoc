@@ -1,17 +1,34 @@
 = simple_currency
 
-Description goes here.
+A really simple currency converter using Xurrency API. Install it as usual:
+
+  gem sources -a http://gemcutter.org/
+  gem install simple_currency
+
+And all your numeric stuff gets this fancy DSL for free:
+
+  30.eur.to_usd
+  # => 38.08
+
+  150.eur.to_usd
+  # => 190.4
+  # This one doesn't even hit Xurrency API,
+  # it takes advantage of Rails cache!
+
+  70.usd.to_chf
+  # => 71.9
 
 == Note on Patches/Pull Requests
  
 * Fork the project.
 * Make your feature addition or bug fix.
-* Add tests for it. This is important so I don't break it in a
+* Add specs for it. This is important so I don't break it in a
   future version unintentionally.
 * Commit, do not mess with rakefile, version, or history.
-  (if you want to have your own version, that is fine but bump version in a commit by itself I can ignore when I pull)
+  If you want to have your own version, that is fine but bump version
+  in a commit by itself I can ignore when I pull.
 * Send me a pull request. Bonus points for topic branches.
 
 == Copyright
 
-Copyright (c) 2010 Josep Mª Bach. See LICENSE for details.
+Copyright (c) 2010 Codegram. See LICENSE for details.

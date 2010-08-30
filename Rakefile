@@ -1,3 +1,4 @@
+# coding: utf-8
 require 'rubygems'
 require 'rake'
 
@@ -5,41 +6,33 @@ begin
   require 'jeweler'
   Jeweler::Tasks.new do |gem|
     gem.name = "simple_currency"
-    gem.summary = %Q{TODO: one-line summary of your gem}
-    gem.description = %Q{TODO: longer description of your gem}
-    gem.email = "josep.m.bach@gmail.com"
+    gem.summary = "A really simple currency converter using the Xurrency API."
+    gem.description = "A really simple currency converter using the Xurrency API. It's Ruby 1.8, 1.9 and JRuby compatible, and it also takes advantage of Rails cache when available."
+    gem.email = "info@codegram.com"
     gem.homepage = "http://github.com/codegram/simple_currency"
-    gem.authors = ["Josep Mª Bach"]
-    gem.add_development_dependency "rspec", ">= 1.2.9"
-    # gem is a Gem::Specification... see http://www.rubygems.org/read/chapter/20 for additional settings
+    gem.authors = ["Oriol Gual", "Josep M. Bach", "Josep Jaume Rey"]
+
+    gem.add_dependency 'json', ">= 1.4.3"
+
+    gem.add_development_dependency "jeweler", '>= 1.4.0'
+    gem.add_development_dependency "rspec", '>= 2.0.0.beta.20'
+    gem.add_development_dependency "fakeweb", '>= 1.3.0'
+    gem.add_development_dependency "rails", '>= 3.0.0'
+    gem.add_development_dependency "bundler", '>= 1.0.0'
   end
   Jeweler::GemcutterTasks.new
 rescue LoadError
-  puts "Jeweler (or a dependency) not available. Install it with: gem install jeweler"
+  puts "Jeweler (or a dependency) not available. Install it with: sudo gem install jeweler"
 end
 
-require 'spec/rake/spectask'
-Spec::Rake::SpecTask.new(:spec) do |spec|
-  spec.libs << 'lib' << 'spec'
-  spec.spec_files = FileList['spec/**/*_spec.rb']
-end
+# Rake RSpec2 task stuff
+gem 'rspec', '>= 2.0.0.beta.20'
+gem 'rspec-expectations'
 
-Spec::Rake::SpecTask.new(:rcov) do |spec|
-  spec.libs << 'lib' << 'spec'
-  spec.pattern = 'spec/**/*_spec.rb'
-  spec.rcov = true
-end
+require 'rspec/core/rake_task'
 
-task :spec => :check_dependencies
+desc "Run the specs under spec"
+RSpec::Core::RakeTask.new do |t|
+end
 
 task :default => :spec
-
-require 'rake/rdoctask'
-Rake::RDocTask.new do |rdoc|
-  version = File.exist?('VERSION') ? File.read('VERSION') : ""
-
-  rdoc.rdoc_dir = 'rdoc'
-  rdoc.title = "simple_currency #{version}"
-  rdoc.rdoc_files.include('README*')
-  rdoc.rdoc_files.include('lib/**/*.rb')
-end
