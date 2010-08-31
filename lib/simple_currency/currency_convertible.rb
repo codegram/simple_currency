@@ -35,8 +35,10 @@ module CurrencyConvertible
 
       # If not, perform a call to the api
       json_response = call_api(original, target, amount)
-      return nil unless json_response
-      result = sprintf("%.2f", JSON.parse(json_response)["result"]["value"]).to_f
+      return nil unless json_response && parsed_response = JSON.parse(json_response)
+      raise parsed_response["message"] if parsed_response["status"] != "ok"
+
+      result = sprintf("%.2f", parsed_response["result"]["value"]).to_f
 
       # Cache exchange rate for today only
       Rails.cache.write("#{original}_#{target}_#{Time.now.to_a[3..5].join('-')}", calculate_rate(amount,result)) if defined?(Rails)
@@ -55,7 +57,7 @@ module CurrencyConvertible
     end
 
     def check_cache(original, target, amount)
-      if rate = ::Rails.cache.read("#{original}_#{target}_#{Time.now.to_a[3..5].join('-')}")
+      if rate = Rails.cache.read("#{original}_#{target}_#{Time.now.to_a[3..5].join('-')}")
         result = (amount * rate).to_f
         return result = (result * 100).round.to_f / 100
       end

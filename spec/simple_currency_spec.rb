@@ -2,9 +2,13 @@ require File.expand_path(File.dirname(__FILE__) + '/spec_helper')
 
 describe "SimpleCurrency" do
 
-  def mock_uri(from_currency, to_currency, amount, result)
+  def mock_uri(from_currency, to_currency, amount, result, options = {})
     args = [from_currency, to_currency, amount]
+
     response = "{\"result\":{\"value\":#{result},\"target\":\"#{to_currency}\",\"base\":\"#{from_currency}\"},\"status\":\"ok\"}"
+
+    response = "{\"message\":\"#{options[:fail_with]}\", \"status\":\"fail\"\}" if options[:fail_with]
+
     FakeWeb.register_uri(:get, "http://xurrency.com/api/#{args.join('/')}", :body => response)
   end
 
@@ -29,6 +33,14 @@ describe "SimpleCurrency" do
     8.should respond_to(:to_eur)
   end
 
+  it "raises any error returned by the api call" do
+    mock_uri('usd', 'xxx', 1, 1.5, :fail_with => "The currencies are not valid")
+    mock_uri('usd', 'eur', 1_000_000_000, 1.5, :fail_with => "The amount should be between 0 and 999999999")
+
+    expect {1.usd.to_xxx}.to raise_error("The currencies are not valid")
+    expect {1_000_000_000.usd.to_eur}.to raise_error("The amount should be between 0 and 999999999")
+  end
+
   context "when Rails is present" do
 
     before(:all) do
@@ -50,13 +62,15 @@ describe "SimpleCurrency" do
     it "ensures the cache is valid only for today" do
       now = Time.parse('2010-08-30')
 
+      Time.stub(:now).and_return(now)
+
       Rails.stub_chain("cache.write").and_return(true)
       Rails.stub_chain("cache.read").with('usd_eur_30-8-2010').and_return(1.5)
 
       mock_uri('usd', 'eur', 1, 1.5)
       1.usd.to_eur.should == 1.5
 
-      Time.stub(:now).and_return(now + 86400) # Tomorrow
+      Time.stub(:now).and_return(now + 86400) # One day later
       Rails.stub_chain("cache.read").with('usd_eur_31-8-2010').and_return(nil)
 
       # Exchange rate has changed next day, so forget cache rate!
