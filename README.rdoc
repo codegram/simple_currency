@@ -1,7 +1,33 @@
 = simple_currency
 
-A really simple currency converter using Xurrency API.
+A really simple currency converter using Xurrency and XavierMedia APIs.
 Compatible with Ruby 1.8, 1.9 and JRuby.
+
+== Usage
+
+Just require it and all your numeric stuff gets this fancy DSL for free:
+
+  30.eur.to_usd
+  # => 38.08
+
+  150.eur.to_usd
+  # => 190.4
+  239.usd.to_eur
+  # => 187.98 
+  # These don't even hit the Internets!
+  # (They take advantage of Rails cache)
+
+  70.usd.to_chf
+  # => 71.9
+
+But what if you want to do the currency exchange according to a specific date
+in the past? Just do this:
+
+  # You can use any time or date object
+  42.eur.at(1.year.ago).to_usd
+  # => 60.12
+  42.eur.at(Time.parse('2009-09-01')).to_usd
+  # => 60.12
 
 == Installation
 
@@ -20,21 +46,6 @@ Then you have to manually install the gem:
 And manually require it as well:
 
   require "simple_currency"
-
-== Usage
-
-Now all your numeric stuff gets this fancy DSL for free:
-
-  30.eur.to_usd
-  # => 38.08
-
-  150.eur.to_usd
-  # => 190.4
-  # This one doesn't even hit Xurrency API,
-  # it takes advantage of Rails cache!
-
-  70.usd.to_chf
-  # => 71.9
 
 == Note on Patches/Pull Requests
  
