@@ -26,7 +26,9 @@ module CurrencyConvertible
       raise unless @original # Must be called after a _from have set the @original currency
 
       original = @original
-      amount = self
+
+      negative = (self < 0)
+      amount = self.abs
 
       # Check if there's a cached exchange rate for today
       if defined?(Rails) && cached_amount = check_cache(original, target, amount)
@@ -53,6 +55,7 @@ module CurrencyConvertible
           _to(target)
       end unless self.respond_to?(:"to_#{target}")
 
+      return -(result) if negative
       result
     end
 

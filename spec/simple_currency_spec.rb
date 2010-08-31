@@ -41,6 +41,12 @@ describe "SimpleCurrency" do
     expect {1_000_000_000.usd.to_eur}.to raise_error("The amount should be between 0 and 999999999")
   end
 
+  it "handles a negative value returning a negative as well" do
+    mock_uri('usd', 'eur', 1, 1.5)
+
+    -1.usd.to_eur.should == -1.5
+  end
+
   context "when Rails is present" do
 
     before(:all) do
