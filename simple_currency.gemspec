@@ -5,11 +5,11 @@
 
 Gem::Specification.new do |s|
   s.name = %q{simple_currency}
-  s.version = "1.0.0"
+  s.version = "1.0.1"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Oriol Gual", "Josep M. Bach", "Josep Jaume Rey"]
-  s.date = %q{2010-08-30}
+  s.date = %q{2010-08-31}
   s.description = %q{A really simple currency converter using the Xurrency API. It's Ruby 1.8, 1.9 and JRuby compatible, and it also takes advantage of Rails cache when available.}
   s.email = %q{info@codegram.com}
   s.extra_rdoc_files = [
@@ -19,9 +19,9 @@ Gem::Specification.new do |s|
   s.files = [
     ".autotest",
      ".bundle/config",
-     ".document",
      ".gitignore",
      ".rspec",
+     ".rvmrc",
      "Gemfile",
      "Gemfile.lock",
      "LICENSE",
