@@ -10,7 +10,7 @@ Gem::Specification.new do |s|
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Oriol Gual", "Josep M. Bach", "Josep Jaume Rey"]
   s.date = %q{2010-09-01}
-  s.description = %q{A really simple currency converter using the Xurrency API. It's Ruby 1.8, 1.9 and JRuby compatible, and it also takes advantage of Rails cache when available.}
+  s.description = %q{A really simple currency converter using the Xurrency and XavierMedia APIs. It's Ruby 1.8, 1.9 and JRuby compatible, and it also takes advantage of Rails cache when available.}
   s.email = %q{info@codegram.com}
   s.extra_rdoc_files = [
     "LICENSE",
@@ -41,7 +41,7 @@ Gem::Specification.new do |s|
   s.rdoc_options = ["--charset=UTF-8"]
   s.require_paths = ["lib"]
   s.rubygems_version = %q{1.3.6}
-  s.summary = %q{A really simple currency converter using the Xurrency API.}
+  s.summary = %q{A really simple currency converter using the Xurrency and XavierMedia APIs.}
   s.test_files = [
     "spec/simple_currency_spec.rb",
      "spec/spec_helper.rb"
@@ -52,14 +52,14 @@ Gem::Specification.new do |s|
     s.specification_version = 3
 
     if Gem::Version.new(Gem::RubyGemsVersion) >= Gem::Version.new('1.2.0') then
-      s.add_runtime_dependency(%q<json>, [">= 1.4.3"])
+      s.add_runtime_dependency(%q<crack>, [">= 0.1.8"])
       s.add_development_dependency(%q<jeweler>, [">= 1.4.0"])
       s.add_development_dependency(%q<rspec>, [">= 2.0.0.beta.20"])
       s.add_development_dependency(%q<fakeweb>, [">= 1.3.0"])
       s.add_development_dependency(%q<rails>, [">= 3.0.0"])
       s.add_development_dependency(%q<bundler>, [">= 1.0.0"])
     else
-      s.add_dependency(%q<json>, [">= 1.4.3"])
+      s.add_dependency(%q<crack>, [">= 0.1.8"])
       s.add_dependency(%q<jeweler>, [">= 1.4.0"])
       s.add_dependency(%q<rspec>, [">= 2.0.0.beta.20"])
       s.add_dependency(%q<fakeweb>, [">= 1.3.0"])
@@ -67,7 +67,7 @@ Gem::Specification.new do |s|
       s.add_dependency(%q<bundler>, [">= 1.0.0"])
     end
   else
-    s.add_dependency(%q<json>, [">= 1.4.3"])
+    s.add_dependency(%q<crack>, [">= 0.1.8"])
     s.add_dependency(%q<jeweler>, [">= 1.4.0"])
     s.add_dependency(%q<rspec>, [">= 2.0.0.beta.20"])
     s.add_dependency(%q<fakeweb>, [">= 1.3.0"])
