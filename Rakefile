@@ -6,13 +6,13 @@ begin
   require 'jeweler'
   Jeweler::Tasks.new do |gem|
     gem.name = "simple_currency"
-    gem.summary = "A really simple currency converter using the Xurrency API."
-    gem.description = "A really simple currency converter using the Xurrency API. It's Ruby 1.8, 1.9 and JRuby compatible, and it also takes advantage of Rails cache when available."
+    gem.summary = "A really simple currency converter using the Xurrency and XavierMedia APIs."
+    gem.description = "A really simple currency converter using the Xurrency and XavierMedia APIs. It's Ruby 1.8, 1.9 and JRuby compatible, and it also takes advantage of Rails cache when available."
     gem.email = "info@codegram.com"
     gem.homepage = "http://github.com/codegram/simple_currency"
     gem.authors = ["Oriol Gual", "Josep M. Bach", "Josep Jaume Rey"]
 
-    gem.add_dependency 'json', ">= 1.4.3"
+    gem.add_dependency 'crack', ">= 0.1.8"
 
     gem.add_development_dependency "jeweler", '>= 1.4.0'
     gem.add_development_dependency "rspec", '>= 2.0.0.beta.20'
