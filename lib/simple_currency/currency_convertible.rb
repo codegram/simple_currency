@@ -18,6 +18,7 @@ module CurrencyConvertible
   # Historical exchange lookup
   def at(exchange = nil)
     begin
+       
       @exchange_date = exchange.send(:to_date)
     rescue
       raise "Must use 'at' with a time or date object"
@@ -85,8 +86,15 @@ module CurrencyConvertible
     # Calls Xurrency API to perform the exchange without a specific date (assuming today)
     #
     def call_xurrency_api(original, target, amount)
+
+      if amount > 999_999_999 # Xurrency API does not support numbers bigger than this
+        amount = 1
+        multiplier = self.abs # Save a multiplier to apply it to the result later
+      end
+
       api_url = "http://xurrency.com/api/#{[original, target, amount].join('/')}"
       uri = URI.parse(api_url)
+
 
       retries = 10
       json_response = nil
@@ -100,11 +108,14 @@ module CurrencyConvertible
       end
 
       return nil unless json_response && parsed_response = Crack::JSON.parse(json_response)
-      raise parsed_response['message'] if parsed_response['status'] != 'ok'
+      if parsed_response['status'] != 'ok'
+        raise CurrencyNotFoundException if parsed_response['message'] =~ /currencies/
+        raise parsed_response['message']
+      end
 
       result = parsed_response['result']['value'].to_f
       cache_rate(original, target, (result / amount))
-      result
+      result * (multiplier || 1)
     end
 
     # Calls Xavier API to perform the exchange with a specific date.
@@ -123,9 +134,11 @@ module CurrencyConvertible
         date = @exchange_date
         args = [date.year, date.month.to_s.rjust(2, '0'), date.day.to_s.rjust(2,'0')]
         api_url = "http://api.finance.xaviermedia.com/api/#{args.join('/')}.xml"
+
         uri = URI.parse(api_url)
 
         retries = 10
+        not_found_retries=2
         xml_response = nil
         begin
           Timeout::timeout(1){
@@ -136,9 +149,21 @@ module CurrencyConvertible
         rescue Timeout::Error
           retries -= 1
           retries > 0 ? sleep(0.42) && retry : raise
+        rescue OpenURI::HTTPError # Try to fetch one day and 2 days earlier
+          not_found_retries -= 1
+          if not_found_retries >= 0
+            date = (Time.parse(date.to_s) - 86400).send(:to_date)
+            args = [date.year, date.month.to_s.rjust(2, '0'), date.day.to_s.rjust(2,'0')]
+            api_url = "http://api.finance.xaviermedia.com/api/#{args.join('/')}.xml"
+            uri = URI.parse(api_url)
+            retry
+          else
+            raise "404 Not Found"
+          end
         end
 
-        return nil unless xml_response && parsed_response = Crack::XML.parse(xml_response)["xavierresponse"]["exchange_rates"]["fx"]
+        return nil unless xml_response && parsed_response = Crack::XML.parse(xml_response)
+        parsed_response = parsed_response["xavierresponse"]["exchange_rates"]["fx"]
 
         # Cache successful XML response for later reuse
         if defined?(Rails)
@@ -148,21 +173,24 @@ module CurrencyConvertible
 
       # Calculate the exchange rate from the XML
       if parsed_response.first['basecurrency'].downcase == original
-        rate = parsed_response.select{|element| element["currency_code"].downcase == target}.first['rate'].to_f
+        rate = parse_rate(parsed_response, target)
       elsif parsed_response.first['basecurrency'].downcase == target
-        target_rate = parsed_response.select{|element| element["currency_code"].downcase == original}.first['rate'].to_f
-        rate = 1 / target_rate if target_rate
+        rate = 1 / parse_rate(parsed_response, original)
       else
-        original_rate = parsed_response.select{|element| element["currency_code"].downcase == original}.first['rate'].to_f
-        target_rate = parsed_response.select{|element| element["currency_code"].downcase == target}.first['rate'].to_f
+        original_rate = parse_rate(parsed_response, original)
+        target_rate = parse_rate(parsed_response, target)
         rate = target_rate / original_rate
       end
 
-      if rate
-        cache_rate(original, target, rate)
-        return amount * rate
-      end
-      nil
+      cache_rate(original, target, rate)
+      amount * rate
+    end
+
+    def parse_rate(parsed_response, currency)
+      rate = parsed_response.select{|element| element["currency_code"].downcase == currency}
+      raise CurrencyNotFoundException, "#{currency} is not a valid currency" unless rate && rate.is_a?(Array) && rate.first
+      raise NoRatesFoundException, "no exchange rate found for #{currency}" unless rate.first['rate'] && rate.first['rate'].to_f > 0
+      rate.first['rate'].to_f
     end
 
     # Caches currency methods to avoid method missing abuse.
@@ -224,3 +252,15 @@ module CurrencyConvertible
     end
 
 end
+
+  ##
+  # Custom Exceptions
+  ##
+   
+  class CurrencyNotFoundException < StandardError
+  end
+
+  class NoRatesFoundException < StandardError
+  end
+
+

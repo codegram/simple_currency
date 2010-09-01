@@ -37,14 +37,20 @@ describe "SimpleCurrency" do
       mock_xurrency_api('usd', 'xxx', 1, 1.5, :fail_with => "The currencies are not valid")
       mock_xurrency_api('usd', 'eur', 1_000_000_000, 1.5, :fail_with => "The amount should be between 0 and 999999999")
 
-      expect {1.usd.to_xxx}.to raise_error("The currencies are not valid")
-      expect {1_000_000_000.usd.to_eur}.to raise_error("The amount should be between 0 and 999999999")
+      expect {1.usd.to_xxx}.to raise_error(CurrencyNotFoundException)
+      expect {1_000_000_000.usd.to_eur}.to_not raise_error
     end
 
     it "handles a negative value returning a negative as well" do
       mock_xurrency_api('usd', 'eur', 1, 1.5)
 
       -1.usd.to_eur.should == -1.5
+    end
+
+    it "handles big amounts" do
+      mock_xurrency_api('usd', 'eur', 1, 1.5)
+
+      1_000_000_000.usd.to_eur.should == 1_500_000_000
     end
 
   end
@@ -67,12 +73,32 @@ describe "SimpleCurrency" do
       2.gbp.at(the_past).to_usd.should == 3.07
     end
 
-    it "raises an error when no data available" do
-      mock_xavier_api(the_past, :fail => true)  # Currency does not exist!
-      mock_xavier_api(the_ancient_past, :fail => true) # Too old!
+    it "retries yesterday and two days ago if no data found (could be a holiday)" do
+      mock_xavier_api(the_past, :fail => true)  # It's a holiday
+      mock_xavier_api(the_past - 86400, :fail => true)  # It's a holiday
+      mock_xavier_api(the_past - 86400 - 86400)  # It's a holiday
 
-      expect {1.usd.at(the_past).to_xxx}.to raise_error(OpenURI::HTTPError)
-      expect {1.usd.at(the_ancient_past).to_eur}.to raise_error(OpenURI::HTTPError)
+      2.eur.at(the_past).to_usd.should == 2.54
+    end
+
+    it "raises an error when no data available" do
+      mock_xavier_api(the_past, :fail => true)  # It's a holiday
+      mock_xavier_api(the_past - 86400, :fail => true)  # It's a holiday
+      mock_xavier_api(the_past - 86400 - 86400, :fail => true)  # It's a holiday
+
+      expect {1.usd.at(the_past).to_eur}.to raise_error("404 Not Found")
+    end
+
+    it "raises a CurrencyNotFoundException given an invalid currency" do
+      mock_xavier_api(the_past)
+
+      expect {1.usd.at(the_past).to_xxx}.to raise_error(CurrencyNotFoundException)
+    end
+
+    it "raises a NoRatesFoundException if rate is 0.0 or non-existant" do
+      mock_xavier_api(the_past)
+
+      expect {1.eur.at(the_past).to_rol}.to raise_error(NoRatesFoundException)
     end
 
   end
