@@ -3,7 +3,6 @@ require 'timeout'
 require 'crack'
 
 module CurrencyConvertible
-
   def method_missing(method, *args, &block)
     return _from(method.to_s) if method.to_s.length == 3 # Presumably a currency ("eur", "gbp"...)
 
@@ -93,8 +92,12 @@ module CurrencyConvertible
       end
 
       api_url = "http://xurrency.com/api/#{[original, target, amount].join('/')}"
+      
+       if SimpleCurrency.xurrency_key
+         api_url << "?key=#{SimpleCurrency.xurrency_key}"
+      end
+      
       uri = URI.parse(api_url)
-
 
       retries = 10
       json_response = nil
