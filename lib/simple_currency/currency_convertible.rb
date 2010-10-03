@@ -1,6 +1,6 @@
 require 'open-uri'
 require 'timeout'
-require 'crack'
+require 'crack/xml'
 
 module CurrencyConvertible
 
@@ -33,7 +33,7 @@ module CurrencyConvertible
     # 30.eur # => Calls _from and sets @original to 'eur'
     #
     def _from(currency)
-      @exchange_date = nil
+      @exchange_date = Time.now.send(:to_date)
       @original = currency
       self
     end

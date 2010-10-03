@@ -1,9 +1,17 @@
-= simple_currency
+# simple_currency
 
-A really simple currency converter using Xurrency and XavierMedia APIs.
+A really simple currency converter using XavierMedia API.
 Compatible with Ruby 1.8, 1.9 and JRuby.
 
-== Usage
+## Notes
+
+Since version 1.2, simple_currency no longer uses Xurrency API in its
+background, due to restrictions on the number of daily requests. If you
+would like to use it, please use the [fork by Alfonso
+Jiménez](http://github.com/alfonsojimenez/simple_currency), author and
+maintainer of xurrency.com service.
+
+## Usage
 
 Just require it and all your numeric stuff gets this fancy DSL for free:
 
@@ -29,15 +37,15 @@ in the past? Just do this:
   42.eur.at(Time.parse('2009-09-01')).to_usd
   # => 60.12
 
-== Installation
+## Installation
 
-=== Rails 3
+### Rails 3
 
 In your Gemfile:
 
   gem "simple_currency"
 
-=== Not using Rails?
+### Not using Rails?
 
 Then you have to manually install the gem:
 
@@ -47,7 +55,7 @@ And manually require it as well:
 
   require "simple_currency"
 
-== Note on Patches/Pull Requests
+## Note on Patches/Pull Requests
  
 * Fork the project.
 * Make your feature addition or bug fix.
@@ -58,6 +66,6 @@ And manually require it as well:
   in a commit by itself I can ignore when I pull.
 * Send me a pull request. Bonus points for topic branches.
 
-== Copyright
+## Copyright
 
 Copyright (c) 2010 Codegram. See LICENSE for details.

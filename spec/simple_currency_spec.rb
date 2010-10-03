@@ -2,178 +2,81 @@ require File.expand_path(File.dirname(__FILE__) + '/spec_helper')
 
 describe "SimpleCurrency" do
 
-  describe "in its basic behavior" do
-
-    it "enhances instances of Numeric with currency methods" do
-      expect { 30.eur && 30.usd && 30.gbp }.to_not raise_error
-    end
-
-    it "handles zero values (by returning them straight away)" do
-      0.usd.to_eur.should == 0.0 
-    end
-
+  it "enhances instances of Numeric with currency methods" do
+    expect { 30.eur && 30.usd && 30.gbp }.to_not raise_error
   end
 
-  context "using Xurrency API for right-now exchange" do
-
-    it "returns a converted amount from one currency to another" do
-      mock_xurrency_api('eur', 'usd', 2, 1.542)
-      2.eur.to_usd.should == 1.54
-
-      mock_xurrency_api('gbp', 'chf', 2, 3.4874)
-      2.gbp.to_chf.should == 3.49
-    end
-
-    it "caches methods for faster reuse" do
-      mock_xurrency_api('usd', 'eur', 1, 1.5)
-
-      1.usd.to_eur.should == 1.5
-
-      8.should respond_to(:usd)
-      8.should respond_to(:to_eur)
-    end
-
-    it "raises any error returned by the api call" do
-      mock_xurrency_api('usd', 'xxx', 1, 1.5, :fail_with => "The currencies are not valid")
-      mock_xurrency_api('usd', 'eur', 1_000_000_000, 1.5, :fail_with => "The amount should be between 0 and 999999999")
-
-      expect {1.usd.to_xxx}.to raise_error(CurrencyNotFoundException)
-      expect {1_000_000_000.usd.to_eur}.to_not raise_error
-    end
-
-    it "handles a negative value returning a negative as well" do
-      mock_xurrency_api('usd', 'eur', 1, 1.5)
-
-      -1.usd.to_eur.should == -1.5
-    end
-
-    it "handles big amounts" do
-      mock_xurrency_api('usd', 'eur', 1, 1.5)
-
-      1_000_000_000.usd.to_eur.should == 1_500_000_000
-    end
-
+  it "handles zero values (by returning them straight away)" do
+    0.usd.to_eur.should == 0.0 
   end
 
-  context "using XavierMedia API for exchange with historical date" do
+  context "using XavierMedia API for exchange" do
 
-    let(:the_past) { Time.parse('2010-08-25')}
-    let(:the_ancient_past) { Time.parse('1964-08-25')}
-
-    it "enhances instances of Numeric with :at method" do
-      expect { 30.eur.at(Time.now) }.to_not raise_error
-      expect { 30.usd.at("no date")}.to raise_error("Must use 'at' with a time or date object")
-      expect { 30.gbp.at(:whatever_arg) }.to raise_error("Must use 'at' with a time or date object")
-    end
+    let(:today) { Time.now }
 
     it "returns a converted amount from one currency to another" do
-      mock_xavier_api(the_past)
-      2.eur.at(the_past).to_usd.should == 2.54
-      2.usd.at(the_past).to_eur.should == 1.58
-      2.gbp.at(the_past).to_usd.should == 3.07
-    end
-
-    it "retries yesterday and two days ago if no data found (could be a holiday)" do
-      mock_xavier_api(the_past, :fail => true)  # It's a holiday
-      mock_xavier_api(the_past - 86400, :fail => true)  # It's a holiday
-      mock_xavier_api(the_past - 86400 - 86400)  # It's a holiday
-
-      2.eur.at(the_past).to_usd.should == 2.54
-    end
-
-    it "raises an error when no data available" do
-      mock_xavier_api(the_past, :fail => true)  # It's a holiday
-      mock_xavier_api(the_past - 86400, :fail => true)  # It's a holiday
-      mock_xavier_api(the_past - 86400 - 86400, :fail => true)  # It's a holiday
-
-      expect {1.usd.at(the_past).to_eur}.to raise_error("404 Not Found")
+      mock_xavier_api(today)
+      2.eur.to_usd.should == 2.54
+      2.usd.to_eur.should == 1.58
+      2.gbp.to_usd.should == 3.07
     end
 
     it "raises a CurrencyNotFoundException given an invalid currency" do
-      mock_xavier_api(the_past)
+      mock_xavier_api(today)
 
-      expect {1.usd.at(the_past).to_xxx}.to raise_error(CurrencyNotFoundException)
+      expect {1.usd.to_xxx}.to raise_error(CurrencyNotFoundException)
     end
 
     it "raises a NoRatesFoundException if rate is 0.0 or non-existant" do
-      mock_xavier_api(the_past)
+      mock_xavier_api(today)
 
-      expect {1.eur.at(the_past).to_rol}.to raise_error(NoRatesFoundException)
+      expect {1.eur.to_rol}.to raise_error(NoRatesFoundException)
     end
 
-  end
+    context "in a particular historical date" do
 
-  context "when Rails (and its cache goodness) is present" do
+      let(:the_past) { Time.parse('2010-08-25')}
+      let(:the_ancient_past) { Time.parse('1964-08-25')}
 
-    let(:now) { Time.parse('2010-08-30') }
-
-    before(:all) do
-      require 'rails'
-    end
-
-    context "using Xurrency API for right-now exchange" do
-
-      before(:each) do
-        Time.stub(:now).and_return(now)
-
-        Rails.stub_chain("cache.read").and_return(false)
-        Rails.stub_chain("cache.write").and_return(true)
+      it "enhances instances of Numeric with :at method" do
+        expect { 30.eur.at(Time.now) }.to_not raise_error
+        expect { 30.usd.at("no date")}.to raise_error("Must use 'at' with a time or date object")
+        expect { 30.gbp.at(:whatever_arg) }.to raise_error("Must use 'at' with a time or date object")
       end
 
-      it "reads the exchange rate from the cache" do
-        Rails.stub_chain("cache.read").and_return(1.5)
-
-        mock_xurrency_api('usd', 'eur', 1, 1.5)
-        1.usd.to_eur.should == 1.5
-
-        URI.should_not_receive(:parse)
-        2.usd.to_eur.should == 3
+      it "returns a converted amount from one currency to another in that particular date" do
+        mock_xavier_api(the_past)
+        2.eur.at(the_past).to_usd.should == 2.54
+        2.usd.at(the_past).to_eur.should == 1.58
+        2.gbp.at(the_past).to_usd.should == 3.07
       end
 
-      it "reads the inverse exchange rate from the cache" do
-        Rails.stub_chain("cache.read").with('usd_eur_30-8-2010').and_return(1.5)
-        Rails.stub_chain("cache.read").with('gbp_eur_30-8-2010').and_return(3)
-        Rails.stub_chain("cache.read").with('gbp_usd_30-8-2010').and_return(false)
+      it "retries yesterday and two days ago if no data found (could be a holiday)" do
+        mock_xavier_api(the_past, :fail => true)  # It's a holiday
+        mock_xavier_api(the_past - 86400, :fail => true)  # It's a holiday
+        mock_xavier_api(the_past - 86400 - 86400)  # It's a holiday
 
-        mock_xurrency_api('usd', 'eur', 1, 1.5)
-        mock_xurrency_api('gbp', 'eur', 1, 3)
-
-        1.usd.to_eur.should == 1.5
-        1.gbp.to_eur.should == 3
-
-        URI.should_not_receive(:parse)
-        3.eur.to_usd.should == 2
-        3.eur.to_gbp.should == 1
+        2.eur.at(the_past).to_usd.should == 2.54
       end
 
-      it "caches the exchange rate" do
-        Rails.stub_chain("cache.read").with('usd_eur_30-8-2010').and_return(false)
+      it "raises an error when no data available" do
+        mock_xavier_api(the_past, :fail => true)  # It's a holiday
+        mock_xavier_api(the_past - 86400, :fail => true)  # It's a holiday
+        mock_xavier_api(the_past - 86400 - 86400, :fail => true)  # It's a holiday
 
-        Rails.cache.should_receive(:write).with('usd_eur_30-8-2010', 1.5)
-
-        mock_xurrency_api('usd', 'eur', 1, 1.5)
-        1.usd.to_eur.should == 1.5
-      end
-
-      it "ensures the cache is valid only for today" do
-        Rails.stub_chain("cache.read").with('usd_eur_30-8-2010').and_return(1.5)
-
-        mock_xurrency_api('usd', 'eur', 1, 1.5)
-        1.usd.to_eur.should == 1.5
-
-        Time.stub(:now).and_return(now + 86400) # One day later
-        Rails.stub_chain("cache.read").with('usd_eur_31-8-2010').and_return(nil)
-
-        # Exchange rate has changed next day, so forget cache rate!
-        mock_xurrency_api('usd', 'eur', 2, 4)
-        2.usd.to_eur.should == 4
+        expect {1.usd.at(the_past).to_eur}.to raise_error("404 Not Found")
       end
 
     end
 
-    context "using XavierMedia API for exchange with historical date" do
+    context "when Rails (and its cache goodness) is present" do
 
+      let(:now) { Time.parse('2010-08-30') }
       let(:the_past) { Time.parse('2010-08-25') }
+
+      before(:all) do
+        require 'rails'
+      end
 
       before(:each) do
         Rails.stub_chain("cache.read").and_return(false)
@@ -217,6 +120,9 @@ describe "SimpleCurrency" do
         1.eur.at(the_past).to_gbp.should == 0.82
         2.gbp.at(the_past).to_usd.should == 3.07
       end
+
     end
+
   end
+
 end

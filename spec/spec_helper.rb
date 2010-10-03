@@ -6,7 +6,7 @@ require 'fakeweb'
 
 require 'simple_currency'
 require 'rspec'
-require 'rspec/autorun'
+# require 'rspec/autorun'   => require it back in beta.23
 
 module HelperMethods
   def fixture(name)
