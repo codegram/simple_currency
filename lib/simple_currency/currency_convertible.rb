@@ -138,7 +138,7 @@ module CurrencyConvertible
         uri = URI.parse(api_url)
 
         retries = 10
-        not_found_retries=2
+        not_found_retries=10
         xml_response = nil
         begin
           Timeout::timeout(1){
