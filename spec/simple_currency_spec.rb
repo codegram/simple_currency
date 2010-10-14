@@ -51,6 +51,11 @@ describe "SimpleCurrency" do
         2.gbp.at(the_past).to_usd.should == 3.07
       end
 
+      it "retries in case of timeout" do
+        mock_xavier_api(the_past, :timeout => 2)
+        2.eur.at(the_past).to_usd.should == 2.54
+      end
+
       it "retries yesterday and two days ago if no data found (could be a holiday)" do
         mock_xavier_api(the_past, :fail => true)  # It's a holiday
         mock_xavier_api(the_past - 86400, :fail => true)  # It's a holiday
@@ -60,11 +65,20 @@ describe "SimpleCurrency" do
       end
 
       it "raises an error when no data available" do
-        mock_xavier_api(the_past, :fail => true)  # It's a holiday
-        mock_xavier_api(the_past - 86400, :fail => true)  # It's a holiday
-        mock_xavier_api(the_past - 86400 - 86400, :fail => true)  # It's a holiday
+        counter = 0
+        10.times do
+          mock_xavier_api(the_past - counter, :fail => true)  # It's a holiday
+          counter += 86400
+        end
 
-        expect {1.usd.at(the_past).to_eur}.to raise_error("404 Not Found")
+        expect {
+          begin 
+            1.usd.at(the_past).to_eur
+          rescue Timeout::Error
+            retry
+          end
+        }.to raise_error("404 Not Found")
+
       end
 
     end

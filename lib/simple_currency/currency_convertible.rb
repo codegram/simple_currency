@@ -70,59 +70,18 @@ module CurrencyConvertible
     def exchange(original, target, amount)
       negative = (self < 0)
 
-      result = @exchange_date ? call_xavier_api(original, target, amount) : call_xurrency_api(original, target, amount)
-
-      # Round result to 2 decimals
-      result = sprintf("%.2f", result).to_f
+      # Get the result and round it to 2 decimals
+      result = sprintf("%.2f", call_xavier_api(original, target, amount)).to_f
 
       return -(result) if negative
       result
-    end
-
-    ## 
-    # API call strategies
-    ##
-   
-    # Calls Xurrency API to perform the exchange without a specific date (assuming today)
-    #
-    def call_xurrency_api(original, target, amount)
-
-      if amount > 999_999_999 # Xurrency API does not support numbers bigger than this
-        amount = 1
-        multiplier = self.abs # Save a multiplier to apply it to the result later
-      end
-
-      api_url = "http://xurrency.com/api/#{[original, target, amount].join('/')}"
-      uri = URI.parse(api_url)
-
-
-      retries = 10
-      json_response = nil
-      begin
-        Timeout::timeout(1){
-          json_response = uri.open.read || nil # Returns the raw response
-        }
-      rescue Timeout::Error
-        retries -= 1
-        retries > 0 ? sleep(0.42) && retry : raise
-      end
-
-      return nil unless json_response && parsed_response = Crack::JSON.parse(json_response)
-      if parsed_response['status'] != 'ok'
-        raise CurrencyNotFoundException if parsed_response['message'] =~ /currencies/
-        raise parsed_response['message']
-      end
-
-      result = parsed_response['result']['value'].to_f
-      cache_rate(original, target, (result / amount))
-      result * (multiplier || 1)
     end
 
     # Calls Xavier API to perform the exchange with a specific date.
     # This method is called when using :at method, like this:
     #
     #   30.eur.at(1.year.ago).to_usd
-    #
+    
     def call_xavier_api(original, target, amount)
 
       # Check if there is any cached XML for the specified date
