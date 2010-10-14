@@ -5,11 +5,11 @@
 
 Gem::Specification.new do |s|
   s.name = %q{simple_currency}
-  s.version = "1.2.1"
+  s.version = "1.2.2"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Oriol Gual", "Josep M. Bach", "Josep Jaume Rey"]
-  s.date = %q{2010-10-04}
+  s.date = %q{2010-10-14}
   s.description = %q{A really simple currency converter using XavierMedia API. It's Ruby 1.8, 1.9 and JRuby compatible, and it also takes advantage of Rails cache when available.}
   s.email = %q{info@codegram.com}
   s.extra_rdoc_files = [
