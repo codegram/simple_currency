@@ -37,6 +37,15 @@ in the past? Just do this:
     42.eur.at(Time.parse('2009-09-01')).to_usd
     # => 60.12
 
+You can also add an subtract money expressions, which will return a result
+converted to the former currency of the expression:
+
+    42.eur + 30.usd
+    # => The same as adding 42 and 30.usd.to_eur
+
+    10.gbp + 1.eur
+    # => The same as adding 10 and 1.eur.to_gbp
+
 ##Installation
 
 ###Rails 3

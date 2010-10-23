@@ -4,53 +4,82 @@ require 'crack/xml'
 
 module CurrencyConvertible
 
+  Operators = {:+ => :add,
+               :- => :subtract}
+
+  def add_with_currency(arg)
+    return add_without_currency(arg) unless arg.is_a? CurrencyConvertible::Proxy
+    add_without_currency(arg)
+  end
+
+  def subtract_with_currency(arg)
+    return subtract_without_currency(arg) unless arg.is_a? CurrencyConvertible::Proxy
+    subtract_without_currency(arg)
+  end
+
+  def self.included(base)
+    base.send(:alias_method, :add_without_currency, :+)
+    base.send(:undef_method, :+)
+    base.send(:alias_method, :+, :add_with_currency)
+
+    base.send(:alias_method, :subtract_without_currency, :-)
+    base.send(:undef_method, :-)
+    base.send(:alias_method, :-, :subtract_with_currency)
+  end
+
   def method_missing(method, *args, &block)
-    return _from(method.to_s) if method.to_s.length == 3 # Presumably a currency ("eur", "gbp"...)
-
-    # Now capture methods like to_eur, to_gbp, to_usd... 
-    if @original && !(method.to_s =~ /^to_(utc|int|str|ary)/) && method.to_s =~/^to_/ && method.to_s.length == 6
-      return _to(method.to_s.gsub('to_',''))
-    end
-
+    return CurrencyConvertible::Proxy.new(self,method.to_s) if method.to_s.length == 3 # Presumably a currency ("eur", "gbp"...)
     super(method,*args,&block)
   end
 
-  # Historical exchange lookup
-  def at(exchange = nil)
-    begin
-       
-      @exchange_date = exchange.send(:to_date)
-    rescue
-      raise "Must use 'at' with a time or date object"
-    end
-    self
-  end
+  class Proxy
+    attr_reader :numeric
 
-  private
-   
-    # Called from first currency metamethod to set the original currency.
-    # 
-    # 30.eur # => Calls _from and sets @original to 'eur'
-    #
-    def _from(currency)
+    def initialize(numeric,currency)
+      @numeric = numeric
+      @currency = currency
       @exchange_date = Time.now.send(:to_date)
-      @original = currency
+    end
+
+    def method_missing(method, *args, &block)
+      if !(method.to_s =~ /^to_(utc|int|str|ary)/) && method.to_s =~/^to_/ && method.to_s.length == 6
+        return _to(method.to_s.gsub('to_',''))
+      end
+      @numeric.send(method, *args, &block)
+    end
+
+    # Historical exchange lookup
+    def at(exchange = nil)
+      begin
+        @exchange_date = exchange.send(:to_date)
+      rescue
+        raise "Must use 'at' with a time or date object"
+      end
       self
     end
 
-    # Called from last currency metamethod to set the target currency.
-    # 
-    #   30.eur.to_usd 
-    #   # => Calls _to and returns the final value, say 38.08
-    #
+    def +(other)
+      return @numeric + other unless other.is_a? CurrencyConvertible::Proxy
+      converted = other.send(:"to_#{@currency}")
+      @numeric + converted
+    end
+
+    def -(other)
+      return @numeric - other unless other.is_a? CurrencyConvertible::Proxy
+      converted = other.send(:"to_#{@currency}")
+      @numeric - converted
+    end
+
+    private
+
     def _to(target)
-      raise unless @original # Must be called after a _from have set the @original currency
+      raise unless @currency
 
-      return 0.0 if self == 0 # Obviously
+      return 0.0 if @numeric == 0 # Obviously
 
-      original = @original
+      original = @currency
 
-      amount = self
+      amount = @numeric
 
       # Check if there's a cached exchange rate for today
       return cached_amount(original, target, amount) if cached_rate(original, target)
@@ -59,16 +88,16 @@ module CurrencyConvertible
       result = exchange(original, target, amount.abs)
 
       # Cache methods
-      cache_currency_methods(original, target)
+      #cache_currency_methods(original, target)
 
       result
     end
 
-    # Main method (called by _to) which calls Xavier or Xurrency strategies
+    # Main method (called by _to) which calls Xavier API
     # and returns a nice result.
     #
     def exchange(original, target, amount)
-      negative = (self < 0)
+      negative = (@numeric < 0)
 
       # Get the result and round it to 2 decimals
       result = sprintf("%.2f", call_xavier_api(original, target, amount)).to_f
@@ -117,8 +146,10 @@ module CurrencyConvertible
             uri = URI.parse(api_url)
             retry
           else
-            raise "404 Not Found"
+            raise NotFoundError.new("404 Not Found")
           end
+        rescue SocketError
+          raise NotFoundError.new("Socket Error")
         end
 
         return nil unless xml_response && parsed_response = Crack::XML.parse(xml_response)
@@ -150,20 +181,6 @@ module CurrencyConvertible
       raise CurrencyNotFoundException, "#{currency} is not a valid currency" unless rate && rate.is_a?(Array) && rate.first
       raise NoRatesFoundException, "no exchange rate found for #{currency}" unless rate.first['rate'] && rate.first['rate'].to_f > 0
       rate.first['rate'].to_f
-    end
-
-    # Caches currency methods to avoid method missing abuse.
-    #
-    def cache_currency_methods(original, target)
-      # Cache the _from method for faster reuse
-      self.class.send(:define_method, original.to_sym) do
-          _from(original)
-      end unless self.respond_to?(original.to_sym)
-
-      # Cache the _to method for faster reuse
-      self.class.send(:define_method, :"to_#{target}") do
-          _to(target)
-      end unless self.respond_to?(:"to_#{target}")
     end
 
     ##
@@ -209,6 +226,7 @@ module CurrencyConvertible
       end
       nil
     end
+  end
 
 end
 
@@ -220,6 +238,9 @@ end
   end
 
   class NoRatesFoundException < StandardError
+  end
+
+  class NotFoundError < StandardError
   end
 
 

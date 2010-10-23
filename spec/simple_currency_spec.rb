@@ -10,6 +10,44 @@ describe "SimpleCurrency" do
     0.usd.to_eur.should == 0.0 
   end
 
+  describe "operators" do
+
+    let(:today) { Time.now }
+
+    before(:each) do
+      mock_xavier_api(today)
+    end
+
+    describe "#+" do
+      it "adds two money expressions" do
+        (1.eur + 1.27.usd).should == 2
+        (1.27.usd + 1.eur).should == 2.54
+        (1.eur + 1.eur).should == 2
+      end
+
+      it "does not affect non-money expressions" do
+        (1 + 1.27).should == 2.27
+        (38.eur + 1.27).should == 39.27
+        (1.27.usd + 38).should == 39.27
+      end
+    end
+
+    describe "#-" do
+      it "subtracts two money expressions" do
+        (1.eur - 1.27.usd).should == 0
+        (1.27.usd - 1.eur).should == 0
+        (1.eur - 1.eur).should == 0
+      end
+
+      it "does not affect non-money expressions" do
+        (1 - 1.27).should == -0.27
+        (38.eur - 1.27).should == 36.73
+        (1.27.usd - 38).should == -36.73
+      end
+    end
+
+  end
+
   context "using XavierMedia API for exchange" do
 
     let(:today) { Time.now }
@@ -74,10 +112,12 @@ describe "SimpleCurrency" do
         expect {
           begin 
             1.usd.at(the_past).to_eur
+          rescue NotFoundError=>e
+            raise e
           rescue Timeout::Error
             retry
           end
-        }.to raise_error("404 Not Found")
+        }.to raise_error(NotFoundError)
 
       end
 
@@ -138,5 +178,6 @@ describe "SimpleCurrency" do
     end
 
   end
+
 
 end

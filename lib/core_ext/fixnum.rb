@@ -1,3 +1,3 @@
-class Numeric
+class Fixnum
   include CurrencyConvertible
 end
