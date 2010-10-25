@@ -8,7 +8,7 @@ Compatible with Ruby 1.8, 1.9, JRuby 1.5.3 and Rubinius 1.1.
 Since version 1.2, simple_currency no longer uses Xurrency API in its
 background, due to restrictions on the number of daily requests. If you
 would like to use it, please use the [fork by Alfonso
-Jiménez](http://github.com/alfonsojimenez/simple_currency), author and
+Jiménez](http://github.com/alfonsojimenez/simple_xurrency), author and
 maintainer of xurrency.com service.
 
 ##Usage
