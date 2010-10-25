@@ -13,7 +13,6 @@ describe "SimpleCurrency" do
   describe "operators" do
 
     let(:today) { Time.now }
-    let(:the_past) { Time.parse('2010-08-25')}
 
     before(:each) do
       mock_xavier_api(today)
@@ -22,7 +21,6 @@ describe "SimpleCurrency" do
     describe "#+" do
       it "adds two money expressions" do
         (1.eur + 1.27.usd).should == 2
-        (1.27.usd + 1.eur).should == 2.54
         (1.27.usd + 1.eur).should == 2.54
         (1.eur + 1.eur).should == 2
       end
