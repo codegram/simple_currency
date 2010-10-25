@@ -4,29 +4,6 @@ require 'crack/xml'
 
 module CurrencyConvertible
 
-  Operators = {:+ => :add,
-               :- => :subtract}
-
-  def add_with_currency(arg)
-    return add_without_currency(arg) unless arg.is_a? CurrencyConvertible::Proxy
-    add_without_currency(arg)
-  end
-
-  def subtract_with_currency(arg)
-    return subtract_without_currency(arg) unless arg.is_a? CurrencyConvertible::Proxy
-    subtract_without_currency(arg)
-  end
-
-  def self.included(base)
-    base.send(:alias_method, :add_without_currency, :+)
-    base.send(:undef_method, :+)
-    base.send(:alias_method, :+, :add_with_currency)
-
-    base.send(:alias_method, :subtract_without_currency, :-)
-    base.send(:undef_method, :-)
-    base.send(:alias_method, :-, :subtract_with_currency)
-  end
-
   def method_missing(method, *args, &block)
     return CurrencyConvertible::Proxy.new(self,method.to_s) if method.to_s.length == 3 # Presumably a currency ("eur", "gbp"...)
     super(method,*args,&block)

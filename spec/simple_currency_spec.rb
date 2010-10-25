@@ -29,6 +29,8 @@ describe "SimpleCurrency" do
         (1 + 1.27).should == 2.27
         (38.eur + 1.27).should == 39.27
         (1.27.usd + 38).should == 39.27
+        (2.27 + 1.usd).should == 3.27
+        (2 + 1.usd).should == 3
       end
     end
 
@@ -43,7 +45,10 @@ describe "SimpleCurrency" do
         (1 - 1.27).should == -0.27
         (38.eur - 1.27).should == 36.73
         (1.27.usd - 38).should == -36.73
+        (3.27 - 2.usd).should == 1.27
+        (2 - 1.usd).should == 1
       end
+
     end
 
   end
