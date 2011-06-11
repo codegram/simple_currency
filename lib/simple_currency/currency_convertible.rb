@@ -54,6 +54,8 @@ module CurrencyConvertible
 
       return 0.0 if @numeric == 0 # Obviously
 
+      return self if @original == target
+
       original = @currency
 
       amount = @numeric

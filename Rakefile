@@ -1,38 +1,45 @@
-# coding: utf-8
-require 'rubygems'
-require 'rake'
+require 'bundler'
+Bundler::GemHelper.install_tasks
 
-begin
-  require 'jeweler'
-  Jeweler::Tasks.new do |gem|
-    gem.name = "simple_currency"
-    gem.summary = "A really simple currency converter using XavierMedia API."
-    gem.description = "A really simple currency converter using XavierMedia API. It's Ruby 1.8, 1.9 and JRuby compatible, and it also takes advantage of Rails cache when available."
-    gem.email = "info@codegram.com"
-    gem.homepage = "http://github.com/codegram/simple_currency"
-    gem.authors = ["Oriol Gual", "Josep M. Bach", "Josep Jaume Rey"]
-
-    gem.add_dependency 'crack', ">= 0.1.8"
-
-    gem.add_development_dependency "jeweler", '>= 1.4.0'
-    gem.add_development_dependency "rspec", '>= 2.0.0.beta.22'
-    gem.add_development_dependency "fakeweb", '>= 1.3.0'
-    gem.add_development_dependency "rails", '>= 3.0.0'
-    gem.add_development_dependency "bundler", '>= 1.0.0'
-  end
-  Jeweler::GemcutterTasks.new
-rescue LoadError
-  puts "Jeweler (or a dependency) not available. Install it with: sudo gem install jeweler"
+require 'rake/testtask'
+Rake::TestTask.new do |t|
+  t.libs << "test"
+  t.test_files = FileList['test/**/*_test.rb']
+  t.verbose = true
 end
 
-# Rake RSpec2 task stuff
-gem 'rspec', '>= 2.0.0.beta.22'
-gem 'rspec-expectations'
-
-require 'rspec/core/rake_task'
-
-desc "Run the specs under spec"
-RSpec::Core::RakeTask.new do |t|
+require 'yard'
+YARD::Rake::YardocTask.new(:docs) do |t|
+  t.files   = ['lib/**/*.rb']
+  t.options = ['-m', 'markdown', '--no-private', '-r', 'Readme.md', '--title', 'Simple Currency documentation']
 end
 
-task :default => :spec
+site = 'doc'
+source_branch = 'master'
+deploy_branch = 'gh-pages'
+
+desc "generate and deploy documentation website to github pages"
+multitask :pages do
+  puts ">>> Deploying #{deploy_branch} branch to Github Pages <<<"
+  require 'git'
+  repo = Git.open('.')
+  puts "\n>>> Checking out #{deploy_branch} branch <<<\n"
+  repo.branch("#{deploy_branch}").checkout
+  (Dir["*"] - [site]).each { |f| rm_rf(f) }
+  Dir["#{site}/*"].each {|f| mv(f, "./")}
+  rm_rf(site)
+  puts "\n>>> Moving generated site files <<<\n"
+  Dir["**/*"].each {|f| repo.add(f) }
+  repo.status.deleted.each {|f, s| repo.remove(f)}
+  puts "\n>>> Commiting: Site updated at #{Time.now.utc} <<<\n"
+  message = ENV["MESSAGE"] || "Site updated at #{Time.now.utc}"
+  repo.commit(message)
+  puts "\n>>> Pushing generated site to #{deploy_branch} branch <<<\n"
+  repo.push
+  puts "\n>>> Github Pages deploy complete <<<\n"
+  repo.branch("#{source_branch}").checkout
+end
+
+task :doc => [:docs]
+
+task :default => :test
