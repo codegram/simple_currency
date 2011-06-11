@@ -3,9 +3,9 @@ require 'test_helper'
 describe "SimpleCurrency" do
 
   it "enhances instances of Numeric with currency methods" do
-    30.must_respond_to :eur
-    30.must_respond_to :usd
-    30.must_respond_to :gbp
+    30.eur.must_be_kind_of CurrencyConvertible::Proxy
+    30.usd.must_be_kind_of CurrencyConvertible::Proxy
+    30.gbp.must_be_kind_of CurrencyConvertible::Proxy
   end
 
   it "handles zero values (by returning them straight away)" do
@@ -18,11 +18,11 @@ describe "SimpleCurrency" do
 
   describe "operators" do
 
-    before :each do
+    before do
       mock_xavier_api(Time.now)
     end
 
-    describe "#+" do
+    describe "#add" do
       it "adds two money expressions" do
         (1.eur + 1.27.usd).must_equal 2
         (1.27.usd + 1.eur).must_equal 2.54
@@ -66,7 +66,7 @@ describe "SimpleCurrency" do
         it "works as well" do
           the_past = Time.parse('2010-08-25')
           mock_xavier_api(the_past)
-          (2.eur.at(the_past) - 2.usd.at(the_past)).should be_close(0.42,0.1)
+          (2.eur.at(the_past) - 2.usd.at(the_past)).must_be_close_to(0.42,0.1)
         end
       end
 
@@ -101,9 +101,9 @@ describe "SimpleCurrency" do
       end
 
       it "enhances instances of Numeric with :at method" do
-        proc { 30.eur.at(Time.now) }.to_not raise_error
-        proc { 30.usd.at("no date")}.must_raise("Must use 'at' with a time or date object")
-        proc { 30.gbp.at(:whatever_arg) }.must_raise("Must use 'at' with a time or date object")
+        30.eur.must_respond_to(:at)
+        proc { 30.usd.at("no date") }.must_raise(RuntimeError, "Must use 'at' with a time or date object")
+        proc { 30.gbp.at(:whatever_arg) }.must_raise(RuntimeError, "Must use 'at' with a time or date object")
       end
 
       it "returns a converted amount from one currency to another in that particular date" do
@@ -111,11 +111,6 @@ describe "SimpleCurrency" do
         2.eur.at(@the_past).to_usd.must_equal 2.54
         2.usd.at(@the_past).to_eur.must_equal 1.58
         2.gbp.at(@the_past).to_usd.must_equal 3.07
-      end
-
-      it "retries in case of timeout" do
-        mock_xavier_api(@the_past, :timeout => 2)
-        2.eur.at(@the_past).to_usd.must_equal 2.54
       end
 
       it "retries yesterday and two days ago if no data found (could be a holiday)" do
@@ -149,55 +144,64 @@ describe "SimpleCurrency" do
 
     describe "when Rails (and its cache goodness) is present" do
 
-      before :each do
+      before do
         @now = Time.parse('2010-08-25')
         @the_past = Time.parse('2010-08-25')
-      end
-      before(:all) do
-        require 'rails'
-      end
 
-      before(:each) do
-        Rails.stub_chain("cache.read").and_return(false)
-        Rails.stub_chain("cache.write").and_return(true)
+        Rails = MiniTest::Mock.new unless defined?(Rails)
+        @cache = MiniTest::Mock.new
+        Rails.expect(:cache, @cache)
 
         mock_xavier_api(@the_past)
       end
 
       it "reads the exchange rate from the cache" do
-        Rails.stub_chain("cache.read").with('usd_eur_25-8-2010').and_return(0.79)
+        Rails.cache.expect(:read, 0.79, ['usd_eur_25-8-2010'])
 
-        URI.should_not_receive(:parse)
         1.usd.at(@the_past).to_eur.must_equal 0.79
         2.usd.at(@the_past).to_eur.must_equal 1.58
+
+        @cache.verify
       end
 
       it "caches the exchange rate with full precision" do
-        Rails.cache.expect(:write).with('eur_jpy_25-8-2010', 107.07).ordered
-        Rails.cache.expect(:write).with("eur_usd_25-8-2010", 1.268).ordered
-        Rails.cache.expect(:write).with("eur_huf_25-8-2010", 287.679993).ordered
+        Rails.cache.expect(:read, false, ['eur_jpy_25-8-2010'])
 
+        Rails.cache.expect(:write, true, ['eur_jpy_25-8-2010', 107.07])
         1.eur.at(@the_past).to_jpy
+
+        Rails.cache.expect(:write, true, ["eur_usd_25-8-2010", 1.268])
         1.eur.at(@the_past).to_usd
+
+        Rails.cache.expect(:write, true, ["eur_huf_25-8-2010", 287.679993])
         2.eur.at(@the_past).to_huf
+
+        @cache.verify
       end
 
       it "caches the XML response" do
-        Rails.cache.expect(:write).with('xaviermedia_25-8-2010', an_instance_of(Array)).and_return(true)
+        xml = Crack::XML.parse(fixture('xavier.xml'))["xavierresponse"]["exchange_rates"]["fx"]
+
+        Rails.cache.expect(:read, false, ['eur_usd_25-8-2010'])
+        Rails.cache.expect(:write, true, ['xaviermedia_25-8-2010', xml])
 
         1.eur.at(@the_past).to_usd
+
+        @cache.verify
       end
 
       it "uses the base currency (EUR) cache to calculate other rates" do
+        xml = Crack::XML.parse(fixture('xavier.xml'))["xavierresponse"]["exchange_rates"]["fx"]
+
+        Rails.cache.expect(:read, false, ['eur_jpy_25-8-2010'])
+        Rails.cache.expect(:write, true, ['xaviermedia_25-8-2010', xml])
+
         1.eur.at(@the_past).to_jpy.must_equal 107.07
-
-        Rails.stub_chain("cache.read").with('xaviermedia_25-8-2010').and_return(Crack::XML.parse(fixture('xavier.xml'))["xavierresponse"]["exchange_rates"]["fx"])
-
-        URI.should_not_receive(:parse)
-
         1.usd.at(@the_past).to_eur.must_equal 0.79
         1.eur.at(@the_past).to_gbp.must_equal 0.82
         2.gbp.at(@the_past).to_usd.must_equal 3.07
+
+        @cache.verify
       end
     end
   end

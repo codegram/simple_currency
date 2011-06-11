@@ -1,11 +1,17 @@
-require 'simplecov'
-SimpleCov.start do
-  add_group "Lib", 'lib'
+begin
+  require 'simplecov'; 
+  SimpleCov.start do
+    add_group "Lib", 'lib'
+  end
+rescue LoadError
 end
+
+begin; require 'turn'; rescue LoadError; end
 
 require 'fakeweb'
 require 'simple_currency'
 require 'minitest/spec'
+require 'minitest/mock'
 require 'minitest/autorun'
 
 def fixture(name)
@@ -21,12 +27,4 @@ def mock_xavier_api(date, options = {})
 
   url = "http://api.finance.xaviermedia.com/api/#{args.join('/')}.xml"
   FakeWeb.register_uri(:get, url, response)
-  # if t = options[:timeout]
-  #   uri = double('uri')
-  #   uri_open = double('uri.open')
-  #   URI.stub(:parse).with(url).and_return(uri)
-  #   uri.stub(:open).and_return(uri_open)
-  #   t.times { uri_open.should_receive(:read).once.ordered.and_raise(Timeout::Error) }
-  #   uri_open.should_receive(:read).once.ordered.and_return(response[:body])
-  # end
 end
